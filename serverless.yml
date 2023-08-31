@@ -35,6 +35,18 @@ functions:
       - http:
           path: users
           method: POST
+  update-users:
+    handler: createUsers/handler.handler
+    events:
+      - http:
+          path: users/{id}
+          method: PATCH
+  delete-users:
+    handler: deleteUsers/handler.handler
+    events:
+      - http:
+          path: users/{id}
+          method: DELETE
 
 resources:
   Resources:
