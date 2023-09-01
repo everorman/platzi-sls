@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs14.x
   iam:
     role:
       statements:
@@ -31,6 +31,12 @@ functions:
       - http:
           path: users/{id}
           method: GET
+          # Esto hace requerido el id en la url
+          request:
+            parameters:
+              paths:
+                id: true
+
   create-users:
     handler: createUsers/handler.handler
     package:
@@ -40,6 +46,11 @@ functions:
       - http:
           path: users
           method: POST
+          #Esto hace validar el body del request con el schema
+          request:
+            schemas:
+              application/json: ${file(schemas/userSchema.json)}
+
   update-users:
     handler: updateUser/handler.handler
     package:
@@ -49,6 +60,14 @@ functions:
       - http:
           path: users/{id}
           method: PATCH
+          #Este  request necesita hacer las dos validaciones.
+          request:
+            parameters:
+              paths:
+                id: true
+            schemas:
+              application/json: ${file(schemas/userSchema.json)}
+
   delete-users:
     handler: deleteUsers/handler.handler
     package:
