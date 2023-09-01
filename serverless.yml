@@ -19,30 +19,41 @@ plugins:
 package:
   individually: true
   patterns:
-    - '!.dynamodb'
-    - '!node_module'
+    - '!*/**'
 
 functions:
   get-users:
     handler: getUsers/handler.handler
+    package:
+      patterns:
+        - 'getUsers/handler.js'
     events:
       - http:
           path: users/{id}
           method: GET
   create-users:
     handler: createUsers/handler.handler
+    package:
+      patterns:
+        - 'createUsers/handler.js'
     events:
       - http:
           path: users
           method: POST
   update-users:
-    handler: createUsers/handler.handler
+    handler: updateUser/handler.handler
+    package:
+      patterns:
+        - 'updateUser/handler.js'
     events:
       - http:
           path: users/{id}
           method: PATCH
   delete-users:
     handler: deleteUsers/handler.handler
+    package:
+      patterns:
+        - 'deleteUsers/handler.js'
     events:
       - http:
           path: users/{id}
