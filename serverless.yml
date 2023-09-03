@@ -11,6 +11,18 @@ provider:
         - Effect: Allow
           Action: dynamodb:*
           Resource: !GetAtt usersTable.Arn
+        - Effect: Allow
+          Action: s3:*
+          Resource: !Join
+            - ''
+            - - !GetAtt S3Bucket.Arn
+              - /*
+
+  environment:
+    BUCKET_NAME: !Join
+      - '-'
+      - - 's3-bucket-'
+        - !Ref 'AWS::AccountId'
 
 plugins:
   - serverless-offline
@@ -23,10 +35,10 @@ package:
 
 functions:
   get-users:
-    handler: getUsers/handler.handler
+    handler: lambdas/getUsers/handler.handler
     package:
       patterns:
-        - 'getUsers/handler.js'
+        - 'lambdas/getUsers/handler.js'
     events:
       - http:
           path: users/{id}
@@ -38,10 +50,10 @@ functions:
                 id: true
 
   create-users:
-    handler: createUsers/handler.handler
+    handler: lambdas/createUsers/handler.handler
     package:
       patterns:
-        - 'createUsers/handler.js'
+        - 'lambdas/createUsers/handler.js'
     events:
       - http:
           path: users
@@ -52,10 +64,10 @@ functions:
               application/json: ${file(schemas/userSchema.json)}
 
   update-users:
-    handler: updateUser/handler.handler
+    handler: lambdas/updateUser/handler.handler
     package:
       patterns:
-        - 'updateUser/handler.js'
+        - 'lambdas/updateUser/handler.js'
     events:
       - http:
           path: users/{id}
@@ -68,11 +80,25 @@ functions:
             schemas:
               application/json: ${file(schemas/userSchema.json)}
 
-  delete-users:
-    handler: deleteUsers/handler.handler
+  sign-url:
+    handler: lambdas/signURL/handler.handler
     package:
       patterns:
-        - 'deleteUsers/handler.js'
+        - 'lambdas/signURL/handler.js'
+    events:
+      - http:
+          path: sign
+          method: GET
+          request:
+            parameters:
+              queryString:
+                filename: true
+
+  delete-users:
+    handler: lambdas/deleteUsers/handler.handler
+    package:
+      patterns:
+        - 'lambdas/deleteUsers/handler.js'
     events:
       - http:
           path: users/{id}
@@ -93,3 +119,45 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+
+    # S3Bucket:
+    #   Type: 'AWS::S3::Bucket'
+    #   DeletionPolicy: Retain
+    #   UpdateReplacePolicy: Retain
+    #   Properties:
+    #     BucketName: !Join
+    #       - '-'
+    #       - - 's3-bucket-'
+    #         - !Ref 'AWS::AccountId'
+    #     AccessControl: PublicRead
+    #     OwnershipControls:
+    #       Rules:
+    #         - ObjectOwnership: ObjectWriter
+
+    S3Bucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+        BucketName: !Join
+          - '-'
+          - - 's3-bucket-'
+            - !Ref 'AWS::AccountId'
+
+    SampleBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref S3Bucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Action:
+                - 's3:GetObject'
+              Effect: Allow
+              Resource: !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref S3Bucket
+                  - /*
+              Principal: '*'
