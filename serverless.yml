@@ -31,7 +31,7 @@ provider:
 package:
   individually: true
   patterns:
-    - '!*/**'
+    - '!**'
 
 functions:
   get-users:
@@ -106,10 +106,11 @@ functions:
 
   thumbnail:
     handler: lambdas/thumbnail/handler.thumbnailGenerator
+    layers:
+      - !Ref BaseLambdaLayer
     package:
       patterns:
         - 'lambdas/thumbnail/handler.js'
-        - 'node_modules/**'
     events:
       - s3:
           bucket: !Ref S3Bucket
@@ -117,6 +118,14 @@ functions:
           existing: true
           rules:
             - prefix: upload/
+
+layers:
+  base:
+    name: prod-dependencies
+    compatibleRuntime:
+      - 'nodejs14.x'
+    package:
+      artifact: nodejs-layer.zip
 
 resources:
   Resources:
