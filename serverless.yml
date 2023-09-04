@@ -24,9 +24,9 @@ provider:
       - - 's3-bucket-'
         - !Ref 'AWS::AccountId'
 
-plugins:
-  - serverless-offline
-  - serverless-dynamodb-local
+# plugins:
+#   - serverless-offline
+#   - serverless-dynamodb-local
 
 package:
   individually: true
@@ -103,6 +103,20 @@ functions:
       - http:
           path: users/{id}
           method: DELETE
+
+  thumbnail:
+    handler: lambdas/thumbnail/handler.thumbnailGenerator
+    package:
+      patterns:
+        - 'lambdas/thumbnail/handler.js'
+        - 'node_modules/**'
+    events:
+      - s3:
+          bucket: !Ref S3Bucket
+          event: s3:ObjectCreated:*
+          existing: true
+          rules:
+            - prefix: upload/
 
 resources:
   Resources:
