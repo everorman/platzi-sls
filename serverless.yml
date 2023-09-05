@@ -5,6 +5,9 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs14.x
+  apiGateway:
+    apiKeys:
+      - platzi-sls-apikey
   iam:
     role:
       statements:
@@ -56,6 +59,7 @@ functions:
         - 'lambdas/createUsers/handler.js'
     events:
       - http:
+          private: true
           path: users
           method: POST
           #Esto hace validar el body del request con el schema
@@ -125,7 +129,7 @@ layers:
     compatibleRuntime:
       - 'nodejs14.x'
     package:
-      artifact: app/nodejs.zip
+      artifact: app/  nodejs.zip
 
 resources:
   Resources:
