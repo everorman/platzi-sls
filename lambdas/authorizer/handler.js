@@ -1,4 +1,4 @@
-module.export.handler = (event, context) => {
+module.exports.handler = (event, context) => {
   const date = new Date();
   const minutes = date.getMinutes();
   const hour = date.getHours();
