@@ -44,6 +44,7 @@ functions:
         - 'lambdas/getUsers/handler.js'
     events:
       - http:
+          private: true
           path: users/{id}
           method: GET
           # Esto hace requerido el id en la url
