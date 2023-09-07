@@ -22,7 +22,7 @@ provider:
               - /*
 
   environment:
-    SECRECT_KEY: ${ssm:/SECRET_KEY}
+    SECRET_KEY: ${ssm:/SECRET_KEY}
     BUCKET_NAME: !Join
       - '-'
       - - 's3-bucket-'
