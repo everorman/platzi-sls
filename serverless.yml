@@ -52,6 +52,9 @@ functions:
     events:
       - http:
           private: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 15
           path: users/{id}
           method: GET
           # Esto hace requerido el id en la url
