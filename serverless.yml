@@ -38,7 +38,7 @@ package:
     - '!**'
 
 functions:
-  authorizer:
+  authorizer-custom:
     handler: lambdas/authorizer/handler.handler
     package:
       patterns:
@@ -53,7 +53,7 @@ functions:
       - http:
           private: true
           authorizer:
-            name: authorizer
+            name: authorizer-custom
             resultTtlInSeconds: 15
           path: users/{id}
           method: GET
@@ -71,7 +71,7 @@ functions:
     events:
       - http:
           authorizer:
-            name: authorizer
+            name: authorizer-custom
             resultTtlInSeconds: 15
           private: true
           path: users
