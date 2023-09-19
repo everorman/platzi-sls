@@ -68,6 +68,10 @@ constructs:
       package:
         patterns:
           - 'lambdas/likeUser/handler.js'
+    extensions:
+      queue:
+        Properties:
+          QueueName: likeQueue
 
 functions:
   authorizer-custom:

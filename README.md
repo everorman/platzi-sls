@@ -40,3 +40,8 @@ aws lambda publish-layer-version --layer-name my-first-layer
 --compatible-runtimes nodejs18.x
 --compatible-architectures x86_64 \
 ```
+
+Plugins instalados:
+
+- [LIFT](https://www.serverless.com/plugins/lift)
+- [SLS proxy](https://www.serverless.com/plugins/serverless-apigateway-service-proxy#customizing-request-parameters)
