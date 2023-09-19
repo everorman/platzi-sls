@@ -61,10 +61,10 @@ custom:
 constructs:
   sqs-queue:
     type: queue
-    batchSize: 1
+    # batchSize: 1
     worker:
       handler: lambdas/likeUser/handler.handler
-      reservedConcurrency: 1
+      # reservedConcurrency: 1
       package:
         patterns:
           - 'lambdas/likeUser/handler.js'
