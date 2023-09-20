@@ -20,7 +20,7 @@ module.exports.handler = async (event, context) => {
     Key: { pk: userId },
     UpdateExpression: "ADD likes :inc",
     ExpressionAttributeValues: {
-      'inc': 1
+      ':inc': 1
     },
     ReturnValues: 'ALL_NEW'
 
