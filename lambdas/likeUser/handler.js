@@ -12,7 +12,7 @@ const dynamodb = new aws.DynamoDB.DocumentClient(dynamoDBClientParams);
 module.exports.handler = async (event, context) => {
   console.log('Event', event);
   const body = event.Records[0].body;
-  const userId = JSON.parse(body).userId;
+  const userId = JSON.parse(body).id;
 
   console.log(`User id: ${userId}`);
   const params = {
