@@ -18,7 +18,7 @@ module.exports.handler = async (event, context) => {
   const params = {
     TableName: 'usersTable',
     Key: { pk: userId },
-    UpdateExpression: "AND likes :inc",
+    UpdateExpression: "ADD likes :inc",
     ExpressionAttributeValues: {
       'inc': 1
     },
