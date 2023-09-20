@@ -4,60 +4,182 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs14.x
+  apiGateway:
+    apiKeys:
+      - platzi-sls-apikey
   iam:
     role:
       statements:
         - Effect: Allow
           Action: dynamodb:*
           Resource: !GetAtt usersTable.Arn
+        - Effect: Allow
+          Action: s3:*
+          Resource: !Join
+            - ''
+            - - !GetAtt S3Bucket.Arn
+              - /*
+
+  environment:
+    SECRET_KEY: ${ssm:/SECRET_KEY}
+    BUCKET_NAME: !Join
+      - '-'
+      - - 's3-bucket-'
+        - !Ref 'AWS::AccountId'
 
 plugins:
-  - serverless-offline
-  - serverless-dynamodb-local
+  - serverless-apigateway-service-proxy
+  - serverless-lift
+#   - serverless-offline
+#   - serverless-dynamodb-local
 
 package:
   individually: true
   patterns:
-    - '!*/**'
+    - '!**'
+
+custom:
+  apiGatewayServiceProxies:
+    - sqs:
+        path: /likeUser
+        method: post
+        queueName: likeQueue
+        cors: true
+        response:
+          template:
+            # `success` is used when the integration response is 200
+            success: |-
+              { "message": "accepted" }
+            # `clientError` is used when the integration response is 400
+            clientError: |-
+              { "message": "there is an error in your request" }
+            # `serverError` is used when the integration response is 500
+            serverError: |-
+              { "message": "there was an error handling your request" }
+
+constructs:
+  sqs-queue:
+    type: queue
+    # batchSize: 1
+    worker:
+      handler: lambdas/likeUser/handler.handler
+      # reservedConcurrency: 1
+      package:
+        patterns:
+          - 'lambdas/likeUser/handler.js'
+    extensions:
+      queue:
+        Properties:
+          QueueName: likeQueue
 
 functions:
-  get-users:
-    handler: getUsers/handler.handler
+  authorizer-custom:
+    handler: lambdas/authorizer/handler.handler
     package:
       patterns:
-        - 'getUsers/handler.js'
+        - 'lambdas/authorizer/handler.js'
+
+  get-users:
+    handler: lambdas/getUsers/handler.handler
+    package:
+      patterns:
+        - 'lambdas/getUsers/handler.js'
     events:
       - http:
+          private: true
+          authorizer:
+            name: authorizer-custom
+            resultTtlInSeconds: 15
           path: users/{id}
           method: GET
+          # Esto hace requerido el id en la url
+          request:
+            parameters:
+              paths:
+                id: true
+
   create-users:
-    handler: createUsers/handler.handler
+    handler: lambdas/createUsers/handler.handler
     package:
       patterns:
-        - 'createUsers/handler.js'
+        - 'lambdas/createUsers/handler.js'
     events:
       - http:
+          authorizer:
+            name: authorizer-custom
+            resultTtlInSeconds: 15
+          private: true
           path: users
           method: POST
+          #Esto hace validar el body del request con el schema
+          request:
+            schemas:
+              application/json: ${file(schemas/userSchema.json)}
+
   update-users:
-    handler: updateUser/handler.handler
+    handler: lambdas/updateUser/handler.handler
     package:
       patterns:
-        - 'updateUser/handler.js'
+        - 'lambdas/updateUser/handler.js'
     events:
       - http:
           path: users/{id}
           method: PATCH
-  delete-users:
-    handler: deleteUsers/handler.handler
+          #Este  request necesita hacer las dos validaciones.
+          request:
+            parameters:
+              paths:
+                id: true
+            schemas:
+              application/json: ${file(schemas/userSchema.json)}
+
+  sign-url:
+    handler: lambdas/signURL/handler.handler
     package:
       patterns:
-        - 'deleteUsers/handler.js'
+        - 'lambdas/signURL/handler.js'
+    events:
+      - http:
+          path: sign
+          method: GET
+          request:
+            parameters:
+              queryString:
+                filename: true
+
+  delete-users:
+    handler: lambdas/deleteUsers/handler.handler
+    package:
+      patterns:
+        - 'lambdas/deleteUsers/handler.js'
     events:
       - http:
           path: users/{id}
           method: DELETE
+
+  thumbnail:
+    handler: lambdas/thumbnail/handler.thumbnailGenerator
+    layers:
+      - !Ref BaseLambdaLayer
+    package:
+      patterns:
+        - 'lambdas/thumbnail/handler.js'
+    events:
+      - s3:
+          bucket: !Ref S3Bucket
+          event: s3:ObjectCreated:*
+          existing: true
+          rules:
+            - prefix: upload/
+
+layers:
+  base:
+    name: prod-dependencies
+    compatibleRuntime:
+      - 'nodejs14.x'
+    package:
+      artifact: app/nodejs.zip
 
 resources:
   Resources:
@@ -74,3 +196,45 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+
+    # S3Bucket:
+    #   Type: 'AWS::S3::Bucket'
+    #   DeletionPolicy: Retain
+    #   UpdateReplacePolicy: Retain
+    #   Properties:
+    #     BucketName: !Join
+    #       - '-'
+    #       - - 's3-bucket-'
+    #         - !Ref 'AWS::AccountId'
+    #     AccessControl: PublicRead
+    #     OwnershipControls:
+    #       Rules:
+    #         - ObjectOwnership: ObjectWriter
+
+    S3Bucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+        BucketName: !Join
+          - '-'
+          - - 's3-bucket-'
+            - !Ref 'AWS::AccountId'
+
+    SampleBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref S3Bucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Action:
+                - 's3:GetObject'
+              Effect: Allow
+              Resource: !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref S3Bucket
+                  - /*
+              Principal: '*'
